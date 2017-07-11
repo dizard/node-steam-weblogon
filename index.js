@@ -18,10 +18,10 @@ function SteamWebLogOn (steamClient, steamUser) {
   this._steamClient.on('logOnResponse', handleLogOnResponse.bind(this));
 }
 
-SteamWebLogOn.prototype.webLogOn = function (callback) {
+SteamWebLogOn.prototype.webLogOn = function (callback, proxy) {
   var sessionKey = SteamCrypto.generateSessionKey();
 
-  getInterface('ISteamUserAuth').post('AuthenticateUser', 1, {
+  getInterface('ISteamUserAuth', null, proxy).post('AuthenticateUser', 1, {
     steamid: this._steamClient.steamID,
     sessionkey: sessionKey.encrypted,
     encrypted_loginkey: SteamCrypto.symmetricEncrypt(
@@ -33,7 +33,7 @@ SteamWebLogOn.prototype.webLogOn = function (callback) {
       // request a new login key first
       this._steamUser.requestWebAPIAuthenticateUserNonce(function (nonce) {
         this._webLoginKey = nonce.webapi_authenticate_user_nonce;
-        this.webLogOn(callback);
+        this.webLogOn(callback, proxy);
       }.bind(this));
       return;
     }

@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "steam-crypto": "0.0.1",
-    "steam-web-api": "0.0.1"
+    "steam-web-api": "https://github.com/dizard/node-steam-web-api"
   },
   "scripts": {}
 }
