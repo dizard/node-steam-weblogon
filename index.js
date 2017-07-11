@@ -21,16 +21,35 @@ function SteamWebLogOn(steamClient, steamUser) {
 
 SteamWebLogOn.prototype.webLogOn = function (callback, proxy) {
     var sessionKey = SteamCrypto.generateSessionKey();
+    console.log(proxy);
+
+    args = {
+        steamid: this._steamClient.steamID,
+        sessionkey: sessionKey.encrypted,
+        encrypted_loginkey: SteamCrypto.symmetricEncrypt(
+            new Buffer(this._webLoginKey),
+            sessionKey.plain
+        )
+    };
+
+    var data = Object.keys(args).map(function(key) {
+        var value = args[key];
+        if (Array.isArray(value))
+            return value.map(function(value, index) {
+                return key + '[' + index + ']=' + value;
+            }).join('&');
+        else if (Buffer.isBuffer(value))
+            return key + '=' + value.toString('hex').replace(/../g, '%$&');
+        else
+            return key + '=' + encodeURIComponent(value);
+    }).join('&');
 
     request.post({
         'url':'https://api.steampowered.com/ISteamUserAuth/AuthenticateUser/v1',
-        'form' : {
-            steamid: this._steamClient.steamID,
-            sessionkey: sessionKey.encrypted,
-            encrypted_loginkey: SteamCrypto.symmetricEncrypt(
-                new Buffer(this._webLoginKey),
-                sessionKey.plain
-            )
+        'body' : data,
+        'headers' : {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Length': data.length
         },
         'proxy':proxy
     }, function (error, response, body) {
@@ -42,6 +61,8 @@ SteamWebLogOn.prototype.webLogOn = function (callback, proxy) {
             return;
         }
 
+        body = JSON.parse(body);
+
         this.sessionID = crypto.randomBytes(12).toString('hex');
         this.cookies = [
             'sessionid=' + this.sessionID,
@@ -50,7 +71,7 @@ SteamWebLogOn.prototype.webLogOn = function (callback, proxy) {
         ];
 
         callback(this.sessionID, this.cookies);
-    });
+    }.bind(this));
 };
 
 module.exports = SteamWebLogOn;
